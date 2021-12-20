@@ -14,7 +14,6 @@ public:
     void Compute_OMP_LUD(int n);
     void Generate_p_Matrix(int n);
     void MatrixMultiply(float **matrix1, float **matrix2, int n);
-
     void PrintMatrix(float **matrix, int n);
 };
 
@@ -132,10 +131,8 @@ void LUD::Compute_OMP_LUD(int n)
 #pragma omp parallel for schedule(static, CHUNK_SIZE)
         for (int j = k + 1; j < n; j++)
         {
-            {
-                L[j][k] = A[j][k] / U[k][k];
-                U[k][j] = A[k][j];
-            }
+            L[j][k] = A[j][k] / U[k][k];
+            U[k][j] = A[k][j];
         }
 
 #pragma omp parallel for collapse(2) schedule(static, CHUNK_SIZE)
@@ -217,9 +214,9 @@ void LUD::MatrixMultiply(float **matrix1, float **matrix2, int n)
 
 int main(int argc, char const *argv[])
 {
-    LUD obj(atoi(argv[1]) , atoi(argv[2]) , atoi(argv[3]), atoi(argv[4])); //n,cs,nt,seed
+    LUD obj(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4])); //n,cs,nt,seed
     obj.Compute_OMP_LUD(atoi(argv[1]));
-    cout<<atoi(argv[3])<<" "<<atoi(argv[1])<<" "<<obj.total_time<<endl;
+    cout << atoi(argv[3]) << " " << atoi(argv[1]) << " " << obj.total_time << endl;
     //obj.MatrixMultiply(obj.Permutation, obj.A_dash, n);
     //obj.MatrixMultiply(obj.L, obj.U, n);
     // cout<<obj.total_time;
