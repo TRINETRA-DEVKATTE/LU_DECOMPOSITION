@@ -15,6 +15,9 @@ void *Init2(void *args1);
 void *Pthread_swap(void *args1);
 void *loop1(void *args1);
 void *loop2(void *args1);
+void *permute(void *args1);
+void PrintMatrix(float **matrix, int n);
+void MatrixMultiply(float **matrix1, float **matrix2, int n);
 
 struct argslist
 {
@@ -28,11 +31,18 @@ int main(int argc, char const *argv[])
     N = atoi(argv[1]);
     pthread_t thread[NUM_THREADS];
 
+    A = new float *[N];
+    A_dash = new float *[N];
+    P = new float[N];
+    L = new float *[N];
+    U = new float *[N];
+    Permutation = new float *[N];
+
     //Initializing
     int ret_val;
     for (int i = 0; i < 3; i++)
     {
-        ret_val = pthread_create(&thread[i], NULL, Init1, (void *)i);
+        ret_val = pthread_create(&thread[i], NULL, Init1, NULL);
         if (ret_val) /* could not create thread */
         {
             printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
@@ -47,7 +57,7 @@ int main(int argc, char const *argv[])
 
     for (int i = 0; i < NUM_THREADS; i++)
     {
-        ret_val = pthread_create(&thread[i], NULL, Init2, (void *)i);
+        ret_val = pthread_create(&thread[i], NULL, Init2, NULL);
         if (ret_val) /* could not create thread */
         {
             printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
@@ -60,9 +70,7 @@ int main(int argc, char const *argv[])
     }
     thread_count = 0;
 
-    //Initialization Done!
-
-    //Computing L and U matrices
+    //inti done
 
     for (int k = 0; k < N; k++)
     {
@@ -78,7 +86,7 @@ int main(int argc, char const *argv[])
         if (max == 0)
         {
             cout << "Matrix is singular";
-            return;
+            return -1;
         }
         swap(P[k], P[r]);
 
@@ -100,11 +108,12 @@ int main(int argc, char const *argv[])
         }
         thread_count = 0;
         // swap done;
-
+        U[k][k] = A[k][k];
         //parallel loop-1
 
         p->first = k;
-        if (N - k - 1 >= 160)
+        p->third = 1;
+        // if (N - k - 1 >= 160)
         {
             for (int i = 0; i < NUM_THREADS; i++)
             {
@@ -124,7 +133,7 @@ int main(int argc, char const *argv[])
         //parallel loop-1 done
 
         //last parallel loop
-        if (N - k - 1 >= 160)
+        // if (N - k - 1 >= 160)
         {
             for (int i = 0; i < NUM_THREADS; i++)
             {
@@ -142,15 +151,29 @@ int main(int argc, char const *argv[])
             thread_count = 0;
         }
         //last parallel loop done
-
     }
     //Generating Permutation Matrix
-    for (int i = 0; i < N; i++)
+    p->first = -1;
+    p->third = 2;
     {
-        int k = P[i];
-        Permutation[i][k] = 1;
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+            ret_val = pthread_create(&thread[i], NULL, loop1, (void *)p);
+            if (ret_val) /* could not create thread */
+            {
+                printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
+                exit(1);
+            }
+        }
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+            pthread_join(thread[i], NULL);
+        }
+        thread_count = 0;
     }
-
+    MatrixMultiply(Permutation, A_dash, N);
+    MatrixMultiply(L, U, N);
+    return 0;
 }
 
 void *Init1(void *args1)
@@ -202,7 +225,7 @@ void *Init2(void *args1)
 
     int delta = N / NUM_THREADS;
     start = delta * th_no;
-    if (th_no < NUM_THREADS-1)
+    if (th_no < NUM_THREADS - 1)
         end = delta * (th_no + 1) - 1;
     else
         end = N - 1;
@@ -265,15 +288,26 @@ void *loop1(void *args1)
 
     int delta = size / NUM_THREADS;
     start = delta * th_no + k + 1;
-    if (th_no < NUM_THREADS-1)
+    if (th_no < NUM_THREADS - 1)
         end = delta * (th_no + 1) - 1 + k + 1;
     else
         end = N - 1;
 
-    for (int j = start; j <= end; j++)
+    if (start <= end && args->third == 1)
     {
-        L[j][k] = A[j][k] / U[k][k];
-        U[k][j] = A[k][j];
+        for (int j = start; j <= end; j++)
+        {
+            L[j][k] = A[j][k] / U[k][k];
+            U[k][j] = A[k][j];
+        }
+    }
+    else if (start <= end && args->third == 2)
+    {
+        for (int i = start; i <= end; i++)
+        {
+            int k = P[i];
+            Permutation[i][k] = 1;
+        }
     }
 
     pthread_exit(NULL);
@@ -293,18 +327,70 @@ void *loop2(void *args1)
 
     int delta = size / NUM_THREADS;
     start = delta * th_no + k + 1;
-    if (th_no < NUM_THREADS-1)
+    if (th_no < NUM_THREADS - 1)
         end = delta * (th_no + 1) - 1 + k + 1;
     else
         end = N - 1;
 
-    for (int i = start; i <= end; i++)
+    if (start <= end)
+    {
+        for (int i = start; i <= end; i++)
         {
             for (int j = k + 1; j < N; j++)
             {
                 A[i][j] -= L[i][k] * U[k][j];
             }
         }
+        pthread_mutex_unlock(&lock);
+    }
 
     pthread_exit(NULL);
+}
+
+void PrintMatrix(float **matrix, int n)
+{
+    string dash = "----------------";
+    for (int i = 0; i < n; i++)
+    {
+        cout << endl;
+        for (int j = 0; j < n; j++)
+        {
+            if (j != 0)
+                cout << " |\t";
+            else
+                cout << "\t";
+            cout << matrix[i][j] << "\t";
+        }
+        if (i != n - 1)
+        {
+            cout << endl;
+            for (int i = 0; i < n; i++)
+            {
+                cout << dash;
+            }
+        }
+    }
+    cout << "\n\n";
+}
+
+void MatrixMultiply(float **matrix1, float **matrix2, int n)
+{
+    float **result;
+    result = new float *[n];
+    for (int h = 0; h < n; h++)
+    {
+        result[h] = new float[n];
+    }
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            result[i][j] = 0;
+            for (int k = 0; k < n; k++)
+            {
+                result[i][j] += matrix1[i][k] * matrix2[k][j];
+            }
+        }
+    }
+    PrintMatrix(result, n);
 }
