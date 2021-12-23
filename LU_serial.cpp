@@ -183,9 +183,9 @@ void LUD::MatrixMultiply(float **matrix1, float **matrix2, int n)
     PrintMatrix(result, n);
 }
 
-int main()
+int main(int argc, char const *argv[])
 {
-    int n = 1000;
+    int n = atoi(argv[1]);
     LUD obj(n);
     obj.Compute_Serial_LUD(n);
     cout << obj.total_time;

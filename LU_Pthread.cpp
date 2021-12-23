@@ -31,6 +31,9 @@ int main(int argc, char const *argv[])
     N = atoi(argv[1]);
     pthread_t thread[NUM_THREADS];
 
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
     A = new float *[N];
     A_dash = new float *[N];
     P = new float[N];
@@ -38,7 +41,7 @@ int main(int argc, char const *argv[])
     U = new float *[N];
     Permutation = new float *[N];
 
-    //Initializing
+    //Initializing data
     int ret_val;
     for (int i = 0; i < 3; i++)
     {
@@ -69,9 +72,9 @@ int main(int argc, char const *argv[])
         pthread_join(thread[i], NULL);
     }
     thread_count = 0;
+    //initializaiton done
 
-    //inti done
-
+    //computing LU decomposition
     for (int k = 0; k < N; k++)
     {
         int max = 0, r = 0;
@@ -107,51 +110,48 @@ int main(int argc, char const *argv[])
             pthread_join(thread[i], NULL);
         }
         thread_count = 0;
-        // swap done;
-        U[k][k] = A[k][k];
-        //parallel loop-1
+        // swapping done;
 
+        U[k][k] = A[k][k];
+
+        //parallel loop-1
         p->first = k;
         p->third = 1;
-        // if (N - k - 1 >= 160)
+
+        for (int i = 0; i < NUM_THREADS; i++)
         {
-            for (int i = 0; i < NUM_THREADS; i++)
+            ret_val = pthread_create(&thread[i], NULL, loop1, (void *)p);
+            if (ret_val) /* could not create thread */
             {
-                ret_val = pthread_create(&thread[i], NULL, loop1, (void *)p);
-                if (ret_val) /* could not create thread */
-                {
-                    printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
-                    exit(1);
-                }
+                printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
+                exit(1);
             }
-            for (int i = 0; i < NUM_THREADS; i++)
-            {
-                pthread_join(thread[i], NULL);
-            }
-            thread_count = 0;
         }
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+            pthread_join(thread[i], NULL);
+        }
+        thread_count = 0;
         //parallel loop-1 done
 
         //last parallel loop
-        // if (N - k - 1 >= 160)
+        for (int i = 0; i < NUM_THREADS; i++)
         {
-            for (int i = 0; i < NUM_THREADS; i++)
+            ret_val = pthread_create(&thread[i], NULL, loop2, (void *)p);
+            if (ret_val) /* could not create thread */
             {
-                ret_val = pthread_create(&thread[i], NULL, loop2, (void *)p);
-                if (ret_val) /* could not create thread */
-                {
-                    printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
-                    exit(1);
-                }
+                printf("\n ERROR: return code from pthread_create is %d \n", ret_val);
+                exit(1);
             }
-            for (int i = 0; i < NUM_THREADS; i++)
-            {
-                pthread_join(thread[i], NULL);
-            }
-            thread_count = 0;
         }
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+            pthread_join(thread[i], NULL);
+        }
+        thread_count = 0;
         //last parallel loop done
     }
+
     //Generating Permutation Matrix
     p->first = -1;
     p->third = 2;
@@ -171,6 +171,15 @@ int main(int argc, char const *argv[])
         }
         thread_count = 0;
     }
+
+    gettimeofday(&end, NULL);
+    total_time = (end.tv_sec - start.tv_sec) * 1e6;
+    total_time = (total_time + (end.tv_usec - 
+                              start.tv_usec)) * 1e-6;
+
+    cout<<N<<" "<<NUM_THREADS<<" "<<total_time<<endl;
+
+    //Permutaion Matrix Generated
     //MatrixMultiply(Permutation, A_dash, N);
     //MatrixMultiply(L, U, N);
     return 0;
@@ -230,7 +239,7 @@ void *Init2(void *args1)
     else
         end = N - 1;
 
-// 1 2 3 4 5 6 7 8 9 10 11 12
+    // 1 2 3 4 5 6 7 8 9 10 11 12
     for (int i = start; i <= end; i++)
     {
         for (int j = 0; j < N; j++)

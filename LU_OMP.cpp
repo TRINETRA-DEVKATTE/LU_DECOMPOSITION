@@ -135,7 +135,7 @@ void LUD::Compute_OMP_LUD(int n)
             U[k][j] = A[k][j];
         }
 
-#pragma omp parallel for collapse(2) schedule(static, CHUNK_SIZE)
+#pragma omp parallel for schedule(static, CHUNK_SIZE)
         for (int i = k + 1; i < n; i++)
         {
             for (int j = k + 1; j < n; j++)
@@ -216,7 +216,7 @@ int main(int argc, char const *argv[])
 {
     LUD obj(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4])); //n,cs,nt,seed
     obj.Compute_OMP_LUD(atoi(argv[1]));
-    cout << atoi(argv[3]) << " " << atoi(argv[1]) << " " << obj.total_time << endl;
+    cout << atoi(argv[3]) << " " << atoi(argv[1]) << " "<< atoi(argv[2]) << " " << obj.total_time << endl;
     //obj.MatrixMultiply(obj.Permutation, obj.A_dash, n);
     //obj.MatrixMultiply(obj.L, obj.U, n);
     // cout<<obj.total_time;
