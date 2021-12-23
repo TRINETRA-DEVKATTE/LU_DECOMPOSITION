@@ -171,8 +171,8 @@ int main(int argc, char const *argv[])
         }
         thread_count = 0;
     }
-    MatrixMultiply(Permutation, A_dash, N);
-    MatrixMultiply(L, U, N);
+    //MatrixMultiply(Permutation, A_dash, N);
+    //MatrixMultiply(L, U, N);
     return 0;
 }
 
@@ -230,6 +230,7 @@ void *Init2(void *args1)
     else
         end = N - 1;
 
+// 1 2 3 4 5 6 7 8 9 10 11 12
     for (int i = start; i <= end; i++)
     {
         for (int j = 0; j < N; j++)

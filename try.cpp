@@ -15,7 +15,7 @@ public:
     void Generate_p_Matrix(int n);
     void MatrixMultiply(float **matrix1, float **matrix2, int n);
     void PrintMatrix(float **matrix, int n);
-};
+};  
 
 LUD::LUD(int n, int cs, int nt, int sd)
 {
@@ -37,40 +37,29 @@ LUD::LUD(int n, int cs, int nt, int sd)
     /*The omp_get_wtime function returns a doubleprecision value equal to the number 
      of seconds since the initial value of the operating system real-time clock.*/
     start = omp_get_wtime();
-
-#pragma omp parallel
+    #pragma omp parallel for schedule(static,2)
+    for (int i = 0; i < n; i++)
     {
-
-#pragma omp task
-        {
-            for (int i = 0; i < n; i++)
-            {
-                A[i] = new float[n]{0};
-                A_dash[i] = new float[n];
-            }
-        }
-
-#pragma omp task
-        {
-            for (int i = 0; i < n; i++)
-            {
-                L[i] = new float[n]{0};
-                L[i][i] = 1;
-            }
-        }
-
-#pragma omp task
-        {
-            for (int i = 0; i < n; i++)
-            {
-                U[i] = new float[n]{0};
-                Permutation[i] = new float[n]{0};
-                P[i] = i;
-            }
-        }
+        A[i] = new float[n]{0};
+        A_dash[i] = new float[n];
+    }
+    
+    #pragma omp parallel for schedule(static,2)
+    for (int i = 0; i < n; i++)
+    {
+        L[i] = new float[n]{0};
+        L[i][i] = 1;
     }
 
-#pragma omp parallel for schedule(static, CHUNK_SIZE)
+    #pragma omp parallel for schedule(static,2)
+    for (int i = 0; i < n; i++)
+    {
+        U[i] = new float[n]{0};
+        Permutation[i] = new float[n]{0};
+        P[i] = i;
+    }
+
+    #pragma omp parallel for collapse(2) schedule(static,2)
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
@@ -108,34 +97,28 @@ void LUD::Compute_OMP_LUD(int n)
         }
         swap(P[k], P[r]);
 
-#pragma omp sections
+        #pragma omp parallel for schedule(static,2)
+        for (int j = 0; j < n; j++)
         {
-#pragma omp section
-            {
-                for (int j = 0; j < n; j++)
-                {
-                    swap(A[k][j], A[r][j]);
-                }
-            }
-#pragma omp section
-            {
-                for (int j = 0; j <= k - 1; j++)
-                {
-                    swap(L[k][j], L[r][j]);
-                }
-            }
+            swap(A[k][j], A[r][j]);
+        }
+
+        #pragma omp parallel for schedule(static,2)
+        for (int j = 0; j <= k - 1; j++)
+        {
+            swap(L[k][j], L[r][j]);
         }
 
         U[k][k] = A[k][k];
 
-#pragma omp parallel for schedule(static, CHUNK_SIZE)
+        #pragma omp parallel for schedule(static,2)
         for (int j = k + 1; j < n; j++)
         {
             L[j][k] = A[j][k] / U[k][k];
             U[k][j] = A[k][j];
         }
 
-#pragma omp parallel for collapse(2) schedule(static, CHUNK_SIZE)
+        #pragma omp parallel for schedule(static,2)
         for (int i = k + 1; i < n; i++)
         {
             for (int j = k + 1; j < n; j++)
@@ -216,7 +199,7 @@ int main(int argc, char const *argv[])
 {
     LUD obj(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4])); //n,cs,nt,seed
     obj.Compute_OMP_LUD(atoi(argv[1]));
-    cout << atoi(argv[3]) << " " << atoi(argv[1]) << " " << obj.total_time << endl;
+    cout<< obj.total_time << endl;
     //obj.MatrixMultiply(obj.Permutation, obj.A_dash, n);
     //obj.MatrixMultiply(obj.L, obj.U, n);
     // cout<<obj.total_time;
