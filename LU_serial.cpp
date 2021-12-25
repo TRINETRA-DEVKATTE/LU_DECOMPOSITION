@@ -19,7 +19,7 @@ public:
 
 LUD::LUD(int n)
 {
-    int seed = 121;
+    int seed = 907;
     A = new float *[n];
     A_dash = new float *[n];
     P = new float[n];
@@ -52,17 +52,16 @@ LUD::LUD(int n)
     {
         for (int j = 0; j < n; j++)
         {
-            seed = (seed % 65536);
-            seed = ((3125 * seed) % 65536);
-            A[i][j] = int((seed / 65536.0) * ((i + 1) * 100));
+            A[i][j] = rand() % 100 + 1;
             A_dash[i][j] = A[i][j];
         }
     }
 
     gettimeofday(&end, NULL);
     total_time = (end.tv_sec - start.tv_sec) * 1e6;
-    total_time = (total_time + (end.tv_usec - 
-                              start.tv_usec)) * 1e-6;
+    total_time = (total_time + (end.tv_usec -
+                                start.tv_usec)) *
+                 1e-6;
 }
 
 void LUD::Compute_Serial_LUD(int n)
@@ -111,8 +110,9 @@ void LUD::Compute_Serial_LUD(int n)
     Generate_p_Matrix(n);
     gettimeofday(&end, NULL);
     total_time = (end.tv_sec - start.tv_sec) * 1e6;
-    total_time = (total_time + (end.tv_usec - 
-                              start.tv_usec)) * 1e-6;
+    total_time = (total_time + (end.tv_usec -
+                                start.tv_usec)) *
+                 1e-6;
 }
 
 void LUD::Generate_p_Matrix(int n)
@@ -131,8 +131,9 @@ void LUD::Generate_p_Matrix(int n)
     }
     gettimeofday(&end, NULL);
     total_time = (end.tv_sec - start.tv_sec) * 1e6;
-    total_time = (total_time + (end.tv_usec - 
-                              start.tv_usec)) * 1e-6;
+    total_time = (total_time + (end.tv_usec -
+                                start.tv_usec)) *
+                 1e-6;
 }
 
 void LUD::PrintMatrix(float **matrix, int n)
@@ -188,7 +189,7 @@ int main(int argc, char const *argv[])
     int n = atoi(argv[1]);
     LUD obj(n);
     obj.Compute_Serial_LUD(n);
-    cout << obj.total_time;
+    cout << obj.total_time<<endl;
     // cout<<obj.total_time;
     /* obj.PrintMatrix(obj.A_dash, n);
     

@@ -78,3 +78,42 @@ for i in range(1,6):
     plt.savefig(loc)
     plt.clf()
 print("Plots Saved in /Plots folder!!")
+
+
+
+
+#Generating plot of serial vs Open MP
+x = [1000,2000,3000,4000,5000]
+serial = []
+threds4 = []
+threds8 = []
+
+import csv
+with open("data_serial.txt", "r") as file:
+	row = file.readlines()
+ 
+for c in row:
+  c = c.strip()
+  split_lines = c.split(" ")
+  serial.append(float(split_lines[0])*10)
+
+with open("data_OMP.txt", "r") as file:
+	row = file.readlines()
+ 
+for c in row:
+  c = c.strip()
+  split_lines = c.split(" ")
+  if split_lines[0] == '4':
+    threds4.append(float(split_lines[3])*10)
+  elif split_lines[0] == '8':
+    threds8.append(float(split_lines[3])*10)
+
+import matplotlib.pyplot as plt
+plt.title("Serial vs Open MP")
+plt.xlabel("size of square Matrix")
+plt.ylabel("Execution time(sec) * 10")
+plt.plot(x, serial, color ="red")
+plt.plot(x, threds4, color ="blue")
+plt.plot(x, threds8, color ="green")
+plt.legend(["Serial", "#threads = 4", "#threads = 8"], loc ="upper left")
+plt.savefig("Plots/Serial_vs_open-MP")

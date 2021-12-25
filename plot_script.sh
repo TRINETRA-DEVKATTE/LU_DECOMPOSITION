@@ -8,7 +8,7 @@ if [ $input -eq 1 ]
 then
      touch data_serial.txt
      > data_serial.txt
-     for n in 1000 2000 3000 4000 5000
+     for n in 1000 2000 3000 4000 
           do
           ./serial_output $n >> data_serial.txt
           echo "serial code with n = $n done!"
@@ -46,6 +46,6 @@ then
 fi
 #file data_pthread.txt contains rows in form <dimension of matrix> <no of Threads> <time taken>
 
-echo("Generating plots....")
+echo "Generating plots...."
 python3 Generate_plot.py 
     
